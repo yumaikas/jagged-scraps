@@ -25,7 +25,7 @@
 (defn regex [patt &opt val]
   (or
     (when-let [locs (regex/find-all patt (or val ROW))]
-      (flatten (map |(regex/match patt (or val ROW) $) locs)))
+      (map |(freeze (regex/match patt (or val ROW) $) locs)))
     (error [:regex-nomatch patt (or val ROW)])))
 
 (defn columns [& cols] 
@@ -109,7 +109,7 @@
 
           (if (not (nil? ROW))
             (cond 
-              splat? (array/push mapped-rows ;ROW)
+              splat? (array/concat mapped-rows ROW)
               true  (array/push mapped-rows ROW))))
 
           (jagg-end ;args))))

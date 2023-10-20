@@ -2,9 +2,15 @@
 
 A pair of tools I wrote in an ADHD hyperfocus session, based around trying to make some CLI stuff less of a pain. YMMV
 
+## Building/installation
+
+If you want to run these scripts, grab a [Janet release](https://github.com/janet-lang/janet/releases).
+
+If you want to compile th
+
 ## Scrap 
 
-Scrap is a cli-style clibboard. Set it up by defining the `SCRAP_DIR` environment variable, and scanning the usage table.
+Scrap is a cli-style clibboard. Set it up by defining the `SCRAP_DIR` environment variable. Usage is shown below.
 
 ### Scrap usage
 
@@ -52,4 +58,22 @@ Using `-r* <Janet Expr>` takes all of the mapped rows, and use `<Janet Expr>` as
 Using `-M <Janet Expr>` runs `<Janet Expr>` as a mapping function over the current output array, usually you'll want to use it *after* any `-r`/`-r*` calls
 Using `-p <Prefix String>` prepends `<Prefix String>` to the pre-output array, which is printed before the output array.
 Using `-j <string>` sets the output row joiner to `<string>`.
+
+### Special functions
+
+The following functions in Jag have been set up to use the current row implicitly
+
+- `split: (split delimeter &opt val)` Splits the row as a string using delimeter. If `val` is passed, it is used instead of the current row.
+- `has: (has patt &opt val)` Predicate to test if the current row contains `pat`. If `val` is passed, it is used instead of the current row.
+- `regex: (patt &op val)` Performs a global spork/regex match on the current row. If `val` is passed, it is used instead of the current row.
+- `columns: (& cols)` Wrapper around zipcoll, it treats `cols` as a list of keys, and the current row as a list of values, and turns the key/value pairs into a struct
+
+### Jag examples
+
+#### Summing numbers
+```cmd
+echo 1,2,3 | jag -s , -m "(scan-number (string/trim r))" -r* "(+ acc el)" 
+# => 6
+```
+
 
