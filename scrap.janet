@@ -3,7 +3,7 @@
 (def *SCRAP-DIR* "SCRAP_DIR")
 
 (defn usage [] 
-  """
+  ```
   scrap: pipe data to/from a junk dir
 
   subcommands
@@ -18,7 +18,7 @@
   scrap ws save <name?>: Saves the current set of scrap files to a backup folder. If <name>
   scrap ws load <name>: Clears the current scrap workspace, and then loads the workspace from <name>
   scrap ws ls: Lists the workspaces
-  """
+  ```
   )
 
 (defn view [arg] 
@@ -111,11 +111,11 @@
     (print dir)))
 
 (comment
-  """
+  ```
   $SCRAP_DIR/ws/ -- The workspaces directory
   $SCRAP_DIR/current.txt -- The current workspace's name
   $SCRAP_DIR/index/ -- The working copy of the current workspace
-  """
+  ```
   )
 
 (defn- ensure-dir [& subpath] 
