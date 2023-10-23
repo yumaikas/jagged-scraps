@@ -37,43 +37,94 @@ Scrap is a cli-style clibboard. Set it up by defining the `SCRAP_DIR` environmen
 
 This is a bit of an awk-alike, but using Janet
 
-It works in 3 phases
+It works in 4 phases.
 
-#### Beginning
+#### Sourcing Data
 
-You can pass `-s <delim>` if the contents of stdin will be using a delimiter other than newline
+The following flags are supported for data sources. If no data source flags are supplied, stdin is used as the data source.
 
-#### Middle
+* `-F <file>` appends the contents of `<file>` to the list of inputs.
+* `-C <constant>` appends `<constant>` to the list of inputs as-is.
+* `-FE <env-var>` appends the contents of the file at the path of `<env-var>` to the list of inputs.
+* `-E <env-var>` appends the contents of `<env-var>` to the list of inputs.
+* `-I` appends the contents of `STDIN` to the list of inputs.
 
-Using `-m <Janet Expr>` adds `<Janet Expr>` to the row mappers  
-Using `-f <Janet Expr>` adds `<Janet Expr>` as predicate to the row mappers
+#### Extracting rows
+
+* `-s <delim>` splits each input on `<delim>` to produce rows.
+* `-re <regex>` uses `<regex>` to find rows in each input, returning an array of the capturing groups.
+
+#### Transforming rows
+
+For the following phases, there is the notion of an function-ish. A function-ish is a Janet expression that either:
+
+- Refers to an existing function, like `sum`,`has` or ,`num`
+- Or is a an expression that acts on one or more known parameters.
+
+For instance, a mapper-ish that isn't a direct reference looks like `(fn [r] <mapper-ish>)`.
+A reducer-ish is similar, but for `(fn [acc el] <reducer-ish>)`.
+
+
+Using `-m <mapper-ish>` adds `<mapper-ish>` to the list of row mappers
+Using `-f <mapper-ish>` adds `<mapper-ish>` as predicate to the row mappers, rejecting rows where `<mapper-ish>` returns `null`.
+Using `-nf <mapper-ish>` adds `<mapper-ish>` as predicate to the row mappers, rejecting rows where `<mapper-ish>` anything *other* than `null`.
 Using `-%` specifies that each row will be returning an array that should be flattened.
 
-#### End
+#### Aggregating rows
 
-The mapped rows are based on the rows deterimined from `-s` and modifed and filtered by `-m`/`-f`.
 
-Using `-r <Janet Expr>` takes all the mapped rows, runs a function on the resuling array (assigned to `r` in the expr), and then appends the result to the output array
-Using `-r* <Janet Expr>` takes all of the mapped rows, and use `<Janet Expr>` as a reducer with the accumuulator assigned to `acc` and the curernt element assigned to `el`. It then appends the result to the output array
-Using `-M <Janet Expr>` runs `<Janet Expr>` as a mapping function over the current output array, usually you'll want to use it *after* any `-r`/`-r*` calls
+Using `-r <mapper-ish>` takes all the mapped rows, and gives them to `<mapper-ish>` as `r`, and then appends the result to the output array
+Using `-r* <reducer-ish>` takes all of the mapped rows, and use `<reducer-ish>` as a reducer with the accumuulator assigned to `acc` and the curernt element assigned to `el`. It then appends the result to the output array
+Using `-M <mapper-ish>` runs `<mapper-ish>` as a mapping function over the current output array, usually you'll want to use it *after* any `-r`/`-r*` calls
 Using `-p <Prefix String>` prepends `<Prefix String>` to the pre-output array, which is printed before the output array.
-Using `-j <string>` sets the output row joiner to `<string>`.
+Using `-j <string>` sets the output row joiner to `<string>`. By default, it is `\n`
 
 ### Special functions
 
 The following functions in Jag have been set up to use the current row implicitly
 
-- `split: (split delimeter &opt val)` Splits the row as a string using delimeter. If `val` is passed, it is used instead of the current row.
-- `has: (has patt &opt val)` Predicate to test if the current row contains `pat`. If `val` is passed, it is used instead of the current row.
-- `regex: (patt &op val)` Performs a global spork/regex match on the current row. If `val` is passed, it is used instead of the current row.
 - `columns: (& cols)` Wrapper around zipcoll, it treats `cols` as a list of keys, and the current row as a list of values, and turns the key/value pairs into a struct
+- `has: (has patt &opt val)` Predicate to test if the current row contains `pat`. If `val` is passed, it is used instead of the current row.
+- `num: (num val)` Parses `val` into a number, if possible.
+- `regex: (patt &op val)` Performs a global spork/regex match on the current row. If `val` is passed, it is used instead of the current row.
+- `split: (split delimeter &opt val)` Splits the row as a string using delimeter. If `val` is passed, it is used instead of the current row.
+
 
 ### Jag examples
 
-#### Summing numbers
-```cmd
-echo 1,2,3 | jag -s , -m "(scan-number (string/trim r))" -r* "(+ acc el)" 
+#### Expanding PATH
+
+```bash
+# Posix
+jag -E PATH -s :
+
+# Windows 
+jag -E PATH -s ;
+```
+
+#### Summing numbers from STDIN
+```bash
+$ echo 1,2,3 | jag -s , -m string/trim -m num -r sum 
 # => 6
 ```
 
+#### Getting the number of non-empty lines in jag.janet
+
+```bash
+jag -F jag.janet -m '(regex ".+")' -nf empty? -r length
+```
+
+#### Getting the `defn` lines out of jag.janet
+
+```bash
+jag -F jag.janet -re "(defn-?[^\n]+)" -nf empty? -m "(r 0)"
+```
+
+#### Building a list of tickets into a branch name
+
+```bash
+$ echo PROJ-34,PROJ-12,proj-577 | jag -re '([Pp][Rr][Oo][Jj])-(\d+)' -m "(update (thaw r) 0 string/ascii-upper)"  -r "(sorted-by |(num ($ 1)) r)" -M "(string/join r :-)" -j _ -p "tickets/"
+# => tickets/PROJ-12_PROJ-34_PROJ-577
+
+```
 
