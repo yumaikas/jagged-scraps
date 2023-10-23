@@ -1,4 +1,4 @@
-(import path)
+(import spork/path)
 (import spork/regex :as regex)
 (defn split-input [file delim] 
   (string/split delim (:read file :all)))
@@ -25,7 +25,7 @@
 (defn regex [patt &opt val]
   (or
     (when-let [locs (regex/find-all patt (or val ROW))]
-      (map |(freeze (regex/match patt (or val ROW) $) locs)))
+      (map |(freeze (regex/match patt (or val ROW) $)) locs))
     (error [:regex-nomatch patt (or val ROW)])))
 
 (defn columns [& cols] 
