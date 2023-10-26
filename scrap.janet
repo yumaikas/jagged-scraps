@@ -3,7 +3,7 @@
 (def *SCRAP-DIR* "SCRAP_DIR")
 
 (defn usage [] 
-  """
+  `
   scrap: pipe data to/from a junk dir
 
   subcommands
@@ -18,7 +18,7 @@
   scrap ws save <name?>: Saves the current set of scrap files to a backup folder. If <name>
   scrap ws load <name>: Clears the current scrap workspace, and then loads the workspace from <name>
   scrap ws ls: Lists the workspaces
-  """
+  `
   )
 
 (defn view [arg] 
@@ -40,7 +40,7 @@
 
 (defn stdin-to-exsting-file [name] 
   (or (not (os/isatty stdin)) (error [:stdin-is-interactive]))
-  (with [file (file/open (path-of "index" name) :wa)]
+  (with [file (file/open (path-of "index" name) :a)]
     (loop [line :iterate (:read stdin :line)]
       (:write file line))))
 
@@ -153,6 +153,7 @@
         ["ws" "save" name] (save-workspace name)
         ["ws" "load" name] (load-workspace name)
         ["ws" "ls"] (list-workspaces)
+        ["help"] (print (usage))
         derp (do 
                (print (string "Did not understand some part of " (view  derp)))
                (print (usage)))

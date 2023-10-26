@@ -17,6 +17,20 @@
     arg
     (string/format "%q" arg)))
 
+(defn combinations [arr] 
+  (distinct (seq [a :in arr b :in arr] (freeze (sorted [a b])))))
+
+(defn regex [patt &opt val]
+    (when-let [locs (regex/find-all patt (or val ROW))
+               results (map |(freeze (regex/match patt (or val ROW) $)) locs)]
+      (cond 
+        (empty? results) nil
+        true results
+      )))
+
+(defn file/lines [file]
+  (regex/match "(?:([^\r\n]+)[\r\n]+)+" (:read file math/int32-max)))
+
 (defn split [delim &opt val] 
   (string/split delim (or val ROW)))
 
@@ -24,11 +38,35 @@
 
 (defn num [&opt val] (scan-number (or val ROW)))
 
-(defn regex [patt &opt val]
-  (or
-    (when-let [locs (regex/find-all patt (or val ROW))]
-      (map |(freeze (regex/match patt (or val ROW) $)) locs))
-    (error [:regex-nomatch patt (or val ROW)])))
+
+
+(defn sh? [cmd &opt expected-exit-code]
+  (def [stdout-r stdout-w] (os/pipe))
+  (def exit-code (os/execute cmd :p { :out stdout-w }))
+  (defer (do (:close stdout-w) (:close stdout-r)) 
+    (= exit-code expected-exit-code)))
+
+(defn sh [cmd]
+  (def [stdout-r stdout-w] (os/pipe))
+  (defer (do (:close stdout-r) (:close stdout-w)) 
+    (def exit-code (os/execute cmd :p { :out stdout-w }))
+    {
+     :exited? (fn [expected] (= exit-code expected))
+     :exit-code exit-code
+     :output (file/lines stdout-r)
+     }
+    ))
+
+(defn git/merge-info [a b]
+  (def merge-info (sh ["git" "merge-tree" "--write-tree" "--no-messages" "--name-only" a b]))
+  {
+   :clean? (fn [] ((merge-info :exited?) 0))
+   :conflicts (slice (merge-info :output) (min 2 (length (merge-info :output))))
+   })
+
+(defn git/exists? [commitish]
+  (sh? ["git" "show-ref" "-q" "--heads"  commitish] 0))
+
 
 (defn columns [& cols] 
   (zipcoll cols ROW))
@@ -143,6 +181,7 @@
     ["-FE" env-var-name] (with-input (fn [] (slurp (os/getenv env-var-name))) ;(slice args 2))
     ["-E" env-var-name] (with-input (fn [] (os/getenv env-var-name)) ;(slice args 2))
     ["-I"] (with-input (fn [] (:read stdin :all)) ;(slice args 1))
+    ["--version"] (print "0.0.1")
     _ (jagg-get-rows 
         (if (> (length inputs) 0) 
           inputs 
