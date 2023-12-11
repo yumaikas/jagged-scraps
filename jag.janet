@@ -38,7 +38,19 @@
 
 (defn num [&opt val] (scan-number (or val ROW)))
 
+(defn rot [x]
+  (def lower "abcdefghijklmnopqrstuvwxyz")
+  (def upper (string/ascii-upper lower))
+  (def rotmap (merge
+    (zipcoll lower (string (slice lower x) (slice lower 0 x)))
+    (zipcoll upper (string (slice upper x) (slice upper 0 x)))))
+  (fn [c] (get rotmap c c)))
 
+(defn rot13 [&opt val] 
+  (string/from-bytes ;(map (rot 13) (or val ROW)) ))
+
+(defn rot [shift &opt val]
+  (string/from-bytes ;(map (rot shift) (or val ROW))))
 
 (defn sh? [cmd &opt expected-exit-code]
   (def [stdout-r stdout-w] (os/pipe))
@@ -188,7 +200,6 @@
           [(fn [] (:read stdin :all))]) 
         ;args)
   ))
-
 
 (defn- main [_ & args] 
   (try 
