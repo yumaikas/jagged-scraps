@@ -1,4 +1,4 @@
-(import path)
+(import spork/path :as path)
 (import jdn)
 
 (def *SCRAP-PROC-DB* "SCRAP_PROC_DB")
@@ -70,6 +70,7 @@
         ["def-here" name] (register-here name ;(slice args 2))
         ["rm" name] (remove name)
         ["ls"] (list-scripts)
+        ["help"] (print usage)
         [name] (exec-script name)
         ))
     ([err fib]

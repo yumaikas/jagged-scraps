@@ -1,4 +1,4 @@
-(import path)
+(import spork/path :as path)
 (import spork/regex :as regex)
 (defn split-input [file delim] 
   (string/split delim (:read file :all)))

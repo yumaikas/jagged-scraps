@@ -1,4 +1,4 @@
-(import path)
+(import spork/path :as path)
 (import jdn)
 (import spork/regex)
 

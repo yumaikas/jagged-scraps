@@ -1,4 +1,4 @@
-(import path)
+(import spork/path :as path)
 
 (def *SCRAP-DIR* "SCRAP_DIR")
 
